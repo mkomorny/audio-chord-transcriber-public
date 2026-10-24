@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audio Chord Transcriber - App Changes Tracker</title>
+<style>
+  :root{
+    --bg:#12141c;
+    --bg-raised:#181b26;
+    --line:#2a2e3a;
+    --text:#e8e6e0;
+    --text-dim:#9195a3;
+    --accent:#5fa8a0;
+    --accent-dim:#3d6f6a;
+    --amber:#d9a05b;
+    --rose:#c97064;
+    --mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    padding:32px 20px 80px;
+    min-height:100vh;
+  }
+  .wrap{max-width:760px; margin:0 auto;}
+
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:16px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:20px;
+    margin-bottom:28px;
+    flex-wrap:wrap;
+  }
+  h1{
+    font-size:1.5rem;
+    margin:0 0 4px;
+    letter-spacing:-0.01em;
+  }
+  .sub{
+    color:var(--text-dim);
+    font-size:0.85rem;
+    font-family:var(--mono);
+  }
+  .sync-note{
+    font-size:0.72rem;
+    color:var(--text-dim);
+    font-family:var(--mono);
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    padding:6px 10px;
+    border-radius:4px;
+    max-width:240px;
+    line-height:1.4;
+  }
+
+  .controls{
+    display:flex;
+    gap:10px;
+    margin-bottom:24px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  input, textarea, select{
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:var(--sans);
+    font-size:0.9rem;
+    padding:9px 11px;
+    border-radius:5px;
+    outline:none;
+  }
+  input:focus, textarea:focus, select:focus{
+    border-color:var(--accent-dim);
+  }
+  .search{flex:1; min-width:160px;}
+  .filter-select{min-width:160px;}
+
+  button{
+    font-family:var(--sans);
+    font-size:0.85rem;
+    font-weight:600;
+    border-radius:5px;
+    border:1px solid transparent;
+    cursor:pointer;
+    padding:9px 16px;
+  }
+  button:disabled{opacity:0.45; cursor:not-allowed;}
+  .btn-primary{background:var(--accent); color:#0d1712;}
+  .btn-primary:hover{background:#71bdb4;}
+  .btn-ghost{background:transparent; border-color:var(--line); color:var(--text-dim);}
+  .btn-ghost:hover{color:var(--text); border-color:var(--text-dim);}
+  .btn-danger{background:transparent; color:var(--rose); border-color:var(--rose);}
+  .btn-danger:hover{background:rgba(201,112,100,0.12);}
+
+  form.entry-form{
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:18px;
+    margin-bottom:32px;
+    display:none;
+  }
+  form.entry-form.open{display:block;}
+  .form-row{display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;}
+  .form-row > *{flex:1; min-width:140px;}
+  .form-row label{
+    display:block;
+    font-family:var(--mono);
+    font-size:0.7rem;
+    color:var(--text-dim);
+    margin-bottom:4px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+  textarea{resize:vertical; min-height:90px; width:100%;}
+  .form-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    margin-top:14px;
+  }
+
+  .status{
+    font-size:0.8rem;
+    color:var(--text-dim);
+    font-family:var(--mono);
+    min-height:18px;
+    margin-bottom:12px;
+  }
+  .status.error{color:var(--rose);}
+
+  .project-group{margin-bottom:32px;}
+  .project-title{
+    font-size:0.78rem;
+    font-family:var(--mono);
+    color:var(--amber);
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    padding-bottom:6px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:12px;
+  }
+
+  .entry{
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    border-radius:6px;
+    margin-bottom:8px;
+    overflow:hidden;
+    transition:border-color 0.15s;
+  }
+  .entry:hover{border-color:var(--accent-dim);}
+  .entry-head{
+    padding:10px 14px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .chevron{
+    font-size:0.7rem;
+    color:var(--text-dim);
+    transition:transform 0.15s;
+    width:12px;
+    text-align:center;
+  }
+  .entry.open .chevron{transform:rotate(90deg); color:var(--accent);}
+  .version{
+    font-family:var(--mono);
+    font-weight:600;
+    font-size:0.95rem;
+    color:var(--accent);
+  }
+  .date{
+    font-family:var(--mono);
+    font-size:0.78rem;
+    color:var(--text-dim);
+    margin-left:auto;
+  }
+  .entry-body{
+    display:none;
+    padding:0 14px 14px 38px;
+    border-top:1px solid var(--line);
+    margin-top:4px;
+    padding-top:12px;
+  }
+  .entry.open .entry-body{display:block;}
+  .desc{
+    font-size:0.88rem;
+    line-height:1.55;
+    color:var(--text);
+    white-space:pre-wrap;
+    word-break:break-word;
+  }
+  .repo-link{
+    margin-top:10px;
+    display:inline-block;
+    font-family:var(--mono);
+    font-size:0.75rem;
+    color:var(--accent);
+    text-decoration:none;
+  }
+  .repo-link:hover{text-decoration:underline;}
+  .entry-actions{
+    display:flex;
+    gap:8px;
+    margin-top:12px;
+    padding-top:8px;
+    border-top:1px dashed var(--line);
+  }
+  .btn-sm{
+    padding:4px 9px;
+    font-size:0.72rem;
+  }
+  .empty{
+    text-align:center;
+    color:var(--text-dim);
+    font-size:0.9rem;
+    padding:40px 0;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Audio Chord Transcriber</h1>
+      <div class="sub">App Changes Tracker · permanent version log</div>
+    </div>
+    <div class="sync-note" id="syncNote">Standalone log — persistent version history with GitHub release traceability.</div>
+  </header>
+
+  <div class="status" id="status"></div>
+
+  <div class="controls">
+    <input class="search" id="searchInput" type="text" placeholder="Search version or description…">
+    <select class="filter-select" id="projectFilter">
+      <option value="">All projects</option>
+    </select>
+    <button class="btn-primary" id="addBtn">+ Add version</button>
+  </div>
+
+  <form class="entry-form" id="entryForm">
+    <input type="hidden" id="editId">
+    <div class="form-row">
+      <div>
+        <label for="fProject">Project</label>
+        <input id="fProject" type="text" value="Audio Chord Transcriber" required>
+      </div>
+      <div>
+        <label for="fVersion">Version</label>
+        <input id="fVersion" type="text" placeholder="e.g. v1.1.0" required>
+      </div>
+      <div>
+        <label for="fDate">Date</label>
+        <input id="fDate" type="date">
+      </div>
+    </div>
+    <div class="form-row">
+      <div style="flex:1 1 100%;">
+        <label for="fRepo">GitHub release / commit link</label>
+        <input id="fRepo" type="url" placeholder="https://github.com/mkomorny/audio-chord-transcriber/releases/tag/v1.0.0">
+      </div>
+    </div>
+    <div class="form-row">
+      <div style="flex:1 1 100%;">
+        <label for="fDesc">Description — what changed</label>
+        <textarea id="fDesc" placeholder="Describe the change, root causes, decisions made, and verified states…"></textarea>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn-ghost" id="cancelBtn">Cancel</button>
+      <button type="submit" class="btn-primary" id="saveBtn">Save entry</button>
+    </div>
+  </form>
+
+  <div id="log"></div>
+
+</div>
+
+<script>
+(function(){
+  const statusEl = document.getElementById('status');
+  const logEl = document.getElementById('log');
+  const form = document.getElementById('entryForm');
+  const addBtn = document.getElementById('addBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const searchInput = document.getElementById('searchInput');
+  const projectFilter = document.getElementById('projectFilter');
+  const editIdField = document.getElementById('editId');
+  const syncNote = document.getElementById('syncNote');
+
+  const OPEN_KEY = 'app-changes-open-audio-chord-transcriber';
+
+  /*ENTRIES_START*/
+  const ENTRIES = [
+    {
+      id: 'seed-audio-chord-transcriber-v1.0.0',
+      project: 'Audio Chord Transcriber',
+      version: 'v1.0.0',
+      date: '2026-09-24',
+      repoUrl: 'https://github.com/mkomorny/audio-chord-transcriber/releases/tag/v1.0.0',
+      description: 'Initial release of Audio Chord Transcriber. Transcribes polyphonic harmonic recordings (acoustic guitar strumming, electric pianos, Rhodes, and synth pads) into clean Type 1 MIDI chord tracks (.mid) and automatically charts human-readable Markdown lead sheets (_lead_sheet.md). Powered by Spotify Basic Pitch neural model with automatic delegation to the dedicated uv virtual environment (C:\\Users\\<you>\\AppData\\Roaming\\uv\\tools\\basic-pitch\\Scripts\\python.exe). Includes an intelligent strum alignment algorithm (default 45ms window) that snaps asynchronous fingerpicked and strummed onsets into clean, coherent block chords while preserving overall progression timing. Deployed canonically with tri-platform NTFS directory junctions across Claude (.claude/skills), Grok (.grok/skills), and Antigravity (.gemini/config/skills).'
+    }
+  ];
+  /*ENTRIES_END*/
+
+  let entries = ENTRIES.slice();
+  let openIds = new Set(['seed-audio-chord-transcriber-v1.0.0']);
+  let canWrite = true;
+
+  try{
+    const raw = localStorage.getItem(OPEN_KEY);
+    if(raw) openIds = new Set(JSON.parse(raw));
+  }catch(err){}
+
+  function saveOpenIds(){
+    try{ localStorage.setItem(OPEN_KEY, JSON.stringify(Array.from(openIds))); }catch(err){}
+  }
+
+  function setStatus(msg, isError){
+    statusEl.textContent = msg || '';
+    statusEl.className = 'status' + (isError ? ' error' : '');
+  }
+
+  function uid(){
+    return 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  }
+
+  function openForm(entry){
+    form.classList.add('open');
+    if(entry){
+      editIdField.value = entry.id;
+      document.getElementById('fProject').value = entry.project;
+      document.getElementById('fVersion').value = entry.version;
+      document.getElementById('fDate').value = entry.date || '';
+      document.getElementById('fRepo').value = entry.repoUrl || '';
+      document.getElementById('fDesc').value = entry.description || '';
+    } else {
+      editIdField.value = '';
+      form.reset();
+      document.getElementById('fProject').value = 'Audio Chord Transcriber';
+      document.getElementById('fDate').value = new Date().toISOString().slice(0,10);
+    }
+    document.getElementById('fVersion').focus();
+  }
+
+  function closeForm(){
+    form.classList.remove('open');
+    form.reset();
+    editIdField.value = '';
+  }
+
+  addBtn.addEventListener('click', () => openForm(null));
+  cancelBtn.addEventListener('click', closeForm);
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = editIdField.value;
+    const data = {
+      project: document.getElementById('fProject').value.trim(),
+      version: document.getElementById('fVersion').value.trim(),
+      date: document.getElementById('fDate').value,
+      repoUrl: document.getElementById('fRepo').value.trim(),
+      description: document.getElementById('fDesc').value.trim()
+    };
+    if(!data.project || !data.version){
+      setStatus('Project and version are required.', true);
+      return;
+    }
+
+    if(id){
+      const idx = entries.findIndex(en => en.id === id);
+      if(idx > -1) entries[idx] = Object.assign({}, entries[idx], data);
+    } else {
+      entries.unshift(Object.assign({id: uid()}, data));
+    }
+
+    setStatus('Entry updated in memory. Remember to commit to Git.');
+    closeForm();
+    render();
+  });
+
+  function escapeHtml(str){
+    return (str || '').replace(/[&<>"']/g, c => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    }[c]));
+  }
+
+  function fmtDate(d){
+    if(!d) return '';
+    const parts = d.split('-');
+    if(parts.length !== 3) return d;
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return months[parseInt(parts[1],10)-1] + ' ' + parseInt(parts[2],10) + ', ' + parts[0];
+  }
+
+  function toggleEntry(id){
+    if(openIds.has(id)) openIds.delete(id); else openIds.add(id);
+    saveOpenIds();
+    render();
+  }
+
+  function render(){
+    const query = searchInput.value.trim().toLowerCase();
+    const projFilter = projectFilter.value;
+
+    const projects = [...new Set(entries.map(e => e.project))].sort((a,b) => a.localeCompare(b));
+    const currentFilterVal = projectFilter.value;
+    projectFilter.innerHTML = '<option value="">All projects</option>' +
+      projects.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+    projectFilter.value = projects.includes(currentFilterVal) ? currentFilterVal : '';
+
+    let filtered = entries.filter(en => {
+      if(projFilter && en.project !== projFilter) return false;
+      if(query){
+        const hay = (en.project + ' ' + en.version + ' ' + en.description).toLowerCase();
+        if(!hay.includes(query)) return false;
+      }
+      return true;
+    });
+
+    if(entries.length === 0){
+      logEl.innerHTML = '<div class="empty">No versions logged yet.<br>Click "+ Add version" to start the log.</div>';
+      return;
+    }
+    if(filtered.length === 0){
+      logEl.innerHTML = '<div class="empty">No entries match your search.</div>';
+      return;
+    }
+
+    const grouped = {};
+    filtered.forEach(en => {
+      if(!grouped[en.project]) grouped[en.project] = [];
+      grouped[en.project].push(en);
+    });
+
+    const groupNames = Object.keys(grouped).sort((a,b) => a.localeCompare(b));
+
+    logEl.innerHTML = groupNames.map(project => {
+      const list = grouped[project].slice().sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+      const rows = list.map(en => {
+        const isOpen = openIds.has(en.id);
+        return `
+        <div class="entry${isOpen ? ' open' : ''}" data-id="${en.id}">
+          <div class="entry-head" onclick="window.__toggleEntry('${en.id}')">
+            <span class="chevron">▶</span>
+            <span class="version">${escapeHtml(en.version)}</span>
+            <span class="date">${escapeHtml(fmtDate(en.date))}</span>
+          </div>
+          <div class="entry-body">
+            ${en.description ? `<div class="desc">${escapeHtml(en.description)}</div>` : ''}
+            ${en.repoUrl ? `<a class="repo-link" href="${escapeHtml(en.repoUrl)}" target="_blank" rel="noopener">↗ View on GitHub</a>` : ''}
+          </div>
+        </div>
+        `;
+      }).join('');
+
+      return `
+      <div class="project-group">
+        <div class="project-title">${escapeHtml(project)} (${list.length})</div>
+        ${rows}
+      </div>
+      `;
+    }).join('');
+  }
+
+  window.__toggleEntry = toggleEntry;
+
+  searchInput.addEventListener('input', render);
+  projectFilter.addEventListener('change', render);
+
+  render();
+})();
+</script>
+</body>
+</html>

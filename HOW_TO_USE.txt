@@ -1,0 +1,49 @@
+HOW TO USE: audio-chord-transcriber
+===================================
+
+PURPOSE
+  Transcribe polyphonic harmonic audio recordings (acoustic guitar strumming,
+  electric piano, Rhodes, synths, pads) into clean, humanized Type 1 MIDI files
+  and an auto-analyzed Markdown chord progression lead sheet.
+
+CAPABILITIES
+  - Neural polyphonic audio-to-MIDI transcription using Spotify Basic Pitch
+  - Automatic musical chord identification (triads, 7ths, add9, 6ths, sus2/sus4, dim, aug)
+  - Intelligent strum alignment: groups loose guitar/piano fingerpicked onsets (default: 45ms window) into synchronous block chords
+  - Dual output: produces both a production-ready .mid file and a formatted _lead_sheet.md table
+  - Automatic virtual environment delegation: calls dedicated uv Basic Pitch runtime transparently
+
+USE CASES
+  - "Transcribe the chords from this acoustic guitar recording."
+  - "Extract the chord progression from this Rhodes keys audio clip."
+  - "Generate a MIDI chord track and lead sheet from my recorded synth harmony."
+  - "Clean up sloppy strummed chord onsets into block chords."
+
+IDEAS
+  - Pair with Ableton Live: drag the generated .mid file straight into an instrument track.
+  - Pair with ableton-midi-chord-builder: re-voice or expand detected chords into jazz or drop-2 voicings.
+  - Disable strum alignment (--no-align) when transcribing arpeggios, fingerpicking, or fast runs.
+  - Tune the strum window (--strum-window 0.03 for tight piano, 0.06 for loose 12-string guitar).
+
+PROMPTS YOU CAN PASTE
+  /audio-chord-transcriber "C:\Music\guitar_acoustic.wav"
+
+  Transcribe the chords and generate a lead sheet for "C:\Recordings\rhodes_jam.mp3"
+
+  Extract the MIDI chords from this guitar audio: "D:\Samples\fingerpicked_intro.wav" --no-align
+
+  Transcribe this audio file into chords and show me the chord progression table.
+
+EXAMPLE FLOW
+  You:   /audio-chord-transcriber "C:\Music\acoustic_strum.wav"
+  Model: Running neural transcription and strum alignment...
+         ✅ Transcription Complete!
+         🎹 MIDI File: C:\Music\acoustic_strum_chords.mid
+         📄 Lead Sheet: C:\Music\acoustic_strum_lead_sheet.md
+         Chord Progression: Cmaj7 -> Am9 -> Dm7 -> G13
+
+DEFAULT GOALS IF YOU DON'T NAME ONE
+  1. Detect all active pitch classes and output a polyphonic .mid file
+  2. Enable strum alignment (45ms window) to produce clean chord blocks
+  3. Generate a Markdown lead sheet table with timestamps and detected chord symbols
+  4. Save outputs adjacent to the source audio file

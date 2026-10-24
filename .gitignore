@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.DS_Store
+Thumbs.db
+*.mid
+*.midi
+*.wav
+*.mp3
+*.flac
+*.ogg
+
+.env
+.env.*
+!.env.example
